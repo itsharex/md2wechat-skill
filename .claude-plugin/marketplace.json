@@ -17,10 +17,6 @@
       "repository": "https://github.com/geekjourneyx/md2wechat-skill",
       "license": "MIT",
       "keywords": ["wechat", "markdown", "blog", "publishing", "html", "converter", "official account", "公众号", "排版"],
-      "runtime": {
-        "type": "binary",
-        "entry": "scripts/run.sh"
-      },
       "strict": false
     }
   ]
