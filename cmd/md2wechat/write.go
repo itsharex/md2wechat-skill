@@ -6,6 +6,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/geekjourneyx/md2wechat-skill/internal/humanizer"
 	"github.com/geekjourneyx/md2wechat-skill/internal/writer"
 	"github.com/spf13/cobra"
 	"go.uber.org/zap"
@@ -30,7 +31,11 @@ Examples:
   md2wechat write --style dan-koe --input-type fragment article.md
 
   # Generate with cover
-  md2wechat write --style dan-koe --cover`,
+  md2wechat write --style dan-koe --cover
+
+  # Write with AI trace removal
+  md2wechat write --style dan-koe --humanize
+  md2wechat write --style dan-koe --humanize --humanize-intensity aggressive`,
 	Args:  cobra.MaximumNArgs(1),
 	PreRunE: func(cmd *cobra.Command, args []string) error {
 		return initConfig()
@@ -44,16 +49,18 @@ Examples:
 
 // write 命令参数
 var (
-	writeStyle       string
-	writeInputType   string
-	writeArticleType string
-	writeLength      string
-	writeTitle       string
-	writeOutput      string
-	writeCover       bool
-	writeCoverOnly   bool
-	writeListStyles  bool
-	writeStyleDetail bool
+	writeStyle        string
+	writeInputType    string
+	writeArticleType  string
+	writeLength       string
+	writeTitle        string
+	writeOutput       string
+	writeCover        bool
+	writeCoverOnly    bool
+	writeListStyles   bool
+	writeStyleDetail  bool
+	writeHumanize     bool
+	writeHumanizeIntensity string
 )
 
 func init() {
@@ -68,6 +75,10 @@ func init() {
 	writeCmd.Flags().BoolVar(&writeCoverOnly, "cover-only", false, "Generate cover only")
 	writeCmd.Flags().BoolVar(&writeListStyles, "list", false, "List all available styles")
 	writeCmd.Flags().BoolVar(&writeStyleDetail, "detail", false, "Show detailed style info")
+
+	// Humanizer flags
+	writeCmd.Flags().BoolVar(&writeHumanize, "humanize", false, "Enable AI trace removal")
+	writeCmd.Flags().StringVar(&writeHumanizeIntensity, "humanize-intensity", "medium", "Humanize intensity: gentle/medium/aggressive")
 }
 
 // runWrite 执行写作命令
@@ -175,6 +186,24 @@ func runInteractiveWrite() error {
 			"prompt":  result.Prompt,
 		}
 
+		// 如果启用了 humanizer，添加 humanizer 提示词
+		if writeHumanize {
+			h := humanizer.NewHumanizer()
+			hReq := &humanizer.HumanizeRequest{
+				Intensity:     humanizer.ParseIntensity(writeHumanizeIntensity),
+				PreserveStyle: true,
+				OriginalStyle: result.Style.EnglishName,
+				ShowChanges:   true,
+				IncludeScore:  true,
+			}
+			output["humanizer"] = map[string]interface{}{
+				"enabled":  true,
+				"intensity": writeHumanizeIntensity,
+				"prompt_template": h.BuildAIRequestForAI(hReq),
+				"instruction": "先生成文章，然后使用 humanizer prompt 去除 AI 痕迹",
+			}
+		}
+
 		if writeCover {
 			coverGen := writer.NewCoverGenerator(asst.GetStyleManager())
 			coverResult, _ := coverGen.GeneratePrompt(&writer.GenerateCoverRequest{
@@ -234,6 +263,25 @@ func executeWrite(input string) error {
 			"action":  "ai_write_request",
 			"style":   result.Style.Name,
 			"prompt":  result.Prompt,
+		}
+
+		// 如果启用了 humanizer，添加 humanizer 提示词
+		if writeHumanize {
+			h := humanizer.NewHumanizer()
+			hReq := &humanizer.HumanizeRequest{
+				// Content 将在 AI 生成后填充
+				Intensity:     humanizer.ParseIntensity(writeHumanizeIntensity),
+				PreserveStyle: true,  // 风格优先
+				OriginalStyle: result.Style.EnglishName,
+				ShowChanges:   true,
+				IncludeScore:  true,
+			}
+			output["humanizer"] = map[string]interface{}{
+				"enabled":  true,
+				"intensity": writeHumanizeIntensity,
+				"prompt_template": h.BuildAIRequestForAI(hReq),
+				"instruction": "先生成文章，然后使用 humanizer prompt 去除 AI 痕迹",
+			}
 		}
 
 		if writeCover || writeCoverOnly {

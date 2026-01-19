@@ -5,6 +5,53 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.6.0] - 2025-01-19
+
+### Added
+- **AI Writing Trace Removal (Humanizer)**: Remove AI-generated text patterns to make content sound more natural
+  - New `humanize` command for standalone AI trace removal
+  - Support for 24 AI writing pattern types based on humanizer-zh method
+  - Three intensity levels: `gentle`, `medium` (default), `aggressive`
+  - Quality scoring system with 5 dimensions (directness, rhythm, trust, authenticity, conciseness)
+  - Style priority principle: preserves writing style characteristics when combined with creator styles
+- **Write + Humanize Integration**: Combine writing style generation with AI trace removal
+  - New `--humanize` flag for `write` command
+  - New `--humanize-intensity` flag to control processing intensity
+  - `--show-changes` flag to view modification details and quality scores
+  - `-o, --output` flag for `humanize` command to save results to file
+- **Pattern Detection Categories**:
+  - Content patterns: overemphasis, promotional language, vague attribution
+  - Language patterns: AI vocabulary, negative parallelism, three-part formula
+  - Style patterns: dash overuse, bold abuse, emoji decoration
+  - Filler avoidance: padding phrases, over-qualification, generic conclusions
+  - Collaboration traces: conversational filler, knowledge cutoff disclaimers
+- **Documentation**:
+  - New `references/humanizer.md` with complete AI trace removal guide
+  - Updated SKILL.md with humanizer natural language examples
+  - Updated manifest.json version to 1.6.0
+
+### Changed
+- `cmd/md2wechat/main.go`: Added `humanizeCmd` to root command registration
+- `cmd/md2wechat/humanize.go`: Implemented complete humanize command with flags
+- `cmd/md2wechat/write.go`: Added humanizer integration flags and output handling
+
+### Technical Details
+- **New Files**:
+  - `internal/humanizer/` - AI writing trace removal module
+    - `result.go` - Core data structures (HumanizeRequest, HumanizeResult, Score, Change)
+    - `prompt.go` - Humanizer-zh prompt builder with 24 pattern types
+    - `humanizer.go` - Core processing logic and response parsing
+  - `cmd/md2wechat/humanize.go` - Humanize command implementation
+  - `skill/md2wechat/references/humanizer.md` - Humanizer documentation
+
+### Breaking Changes
+- None
+
+### Migration Guide
+No migration required. The humanize command is a new feature and doesn't affect existing functionality.
+
+---
+
 ## [1.5.0] - 2025-01-17
 
 ### Added
@@ -214,6 +261,7 @@ No migration required. The write command is a new feature and doesn't affect exi
 
 | Version | Date | Description |
 |---------|------|-------------|
+| [1.6.0] | 2025-01-19 | AI writing trace removal (Humanizer), write + humanize integration |
 | [1.5.0] | 2025-01-17 | Writer style assistant, Dan Koe style, image size control |
 | [1.4.0] | 2025-01-14 | TuZi image provider, natural language image generation |
 | [1.3.1] | 2025-01-12 | Auto binary download, user-friendly errors, system dependencies |

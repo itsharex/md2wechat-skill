@@ -169,6 +169,9 @@ Examples:
 	// write command
 	rootCmd.AddCommand(writeCmd)
 
+	// humanize command
+	rootCmd.AddCommand(humanizeCmd)
+
 	// test-draft command
 	rootCmd.AddCommand(testHTMLCmd)
 
