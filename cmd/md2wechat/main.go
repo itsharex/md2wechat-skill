@@ -175,6 +175,9 @@ Examples:
 	// test-draft command
 	rootCmd.AddCommand(testHTMLCmd)
 
+	// create-image-post command (小绿书)
+	rootCmd.AddCommand(createImagePostCmd)
+
 	// Execute
 	if err := rootCmd.Execute(); err != nil {
 		responseError(err)

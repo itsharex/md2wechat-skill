@@ -5,6 +5,44 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.9.0] - 2025-02-06
+
+### Added
+- **Image Post (小绿书/Newspic)**: Create WeChat image-only posts with up to 20 images
+  - New `create_image_post` command for 小绿书 creation
+  - Support comma-separated image paths: `--images photo1.jpg,photo2.jpg`
+  - Extract images from Markdown files: `--from-markdown article.md`
+  - Comment settings: `--open-comment`, `--fans-only`
+  - Preview mode: `--dry-run` for testing without upload
+  - Stdin support for description content
+- **WeChat API Documentation**: Updated `references/wechat-api.md` with complete draft/add API documentation
+  - Added `article_type` field (`news`/`newspic`)
+  - Added comment settings fields
+  - Added image_info structure for newspic
+  - Added cover cropping fields
+
+### Changed
+- **Article Structure**: Extended with newspic support fields (backward compatible with `omitempty`)
+  - `article_type`: news (default) or newspic
+  - `need_open_comment`: comment settings
+  - `only_fans_can_comment`: fan-only comment settings
+  - `image_info`: image list for newspic
+
+### Technical Details
+- **New Files**:
+  - `cmd/md2wechat/create_image_post.go` - CLI command implementation
+- **Modified Files**:
+  - `internal/draft/service.go` - Added `CreateImagePost`, `GetImagePostPreview`, `extractImagesFromMarkdown`
+  - `internal/wechat/service.go` - Added `CreateNewspicDraft` for direct API call (SDK doesn't support newspic)
+  - `cmd/md2wechat/main.go` - Registered `createImagePostCmd`
+  - `skills/md2wechat/SKILL.md` - Added image post documentation
+  - `skills/md2wechat/references/wechat-api.md` - Complete draft API documentation
+
+### Migration Guide
+No migration required. The `create_image_post` command is a new feature and doesn't affect existing functionality.
+
+---
+
 ## [1.8.0] - 2025-02-05
 
 ### Added
@@ -373,6 +411,7 @@ No migration required. The write command is a new feature and doesn't affect exi
 
 | Version | Date | Description |
 |---------|------|-------------|
+| [1.9.0] | 2025-02-06 | Image Post (小绿书/newspic) support |
 | [1.8.0] | 2025-02-05 | OpenClaw support, directory simplification, run.sh refactoring |
 | [1.7.0] | 2025-01-25 | ModelScope image provider, write command stdin support |
 | [1.6.0] | 2025-01-19 | AI writing trace removal (Humanizer), write + humanize integration |

@@ -77,60 +77,226 @@ mediaID, url, err := materialManager.AddMaterial(
 | 40006 | 文件大小超限 | 压缩图片 |
 | 42001 | AppSecret 错误 | 检查配置 |
 
-## API 2: 新建草稿
+## API 2: 新建草稿 (draft/add)
 
-创建图文草稿到公众号草稿箱。
+创建素材到公众号草稿箱。支持两种类型：
+
+- **图文消息 (news)**: 传统图文文章
+- **图片消息 (newspic)**: 小绿书，纯图片帖子
+
+> **注意**: 上传到草稿箱中的素材被群发或发布后，该素材将从草稿箱中移除。
 
 ### 调用方式
 
+```
+POST https://api.weixin.qq.com/cgi-bin/draft/add?access_token=ACCESS_TOKEN
+```
+
+### CLI 命令
+
 ```bash
+# 图文消息
 md2wechat create_draft <json_file>
+
+# 图片消息（小绿书）
+md2wechat create_image_post -t "标题" --images photo1.jpg,photo2.jpg
+```
+
+### 请求参数
+
+| 参数 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| articles | array | 是 | 图文素材集合 |
+
+### 文章字段说明 (articles[])
+
+| 字段 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| article_type | string | 否 | 文章类型：`news`（图文消息，默认）、`newspic`（图片消息/小绿书） |
+| title | string | 是 | 标题，不超过 32 字符 |
+| author | string | 否 | 作者，不超过 16 字符 |
+| digest | string | 否 | 摘要，不超过 128 字符（仅单图文有效） |
+| content | string | 是 | 正文内容。图文消息：HTML，< 2 万字符，< 1MB；图片消息：纯文本 |
+| content_source_url | string | 否 | 原文链接，不超过 1KB |
+| thumb_media_id | string | 条件 | 封面图素材 ID（图文消息必填，必须是永久 MediaID） |
+| need_open_comment | number | 否 | 是否打开评论：0 不打开（默认），1 打开 |
+| only_fans_can_comment | number | 否 | 是否仅粉丝可评论：0 所有人（默认），1 仅粉丝 |
+| pic_crop_235_1 | string | 否 | 封面 2.35:1 裁剪坐标，格式：`X1_Y1_X2_Y2` |
+| pic_crop_1_1 | string | 否 | 封面 1:1 裁剪坐标，格式：`X1_Y1_X2_Y2` |
+| image_info | object | 条件 | 图片消息必填，图片信息 |
+| cover_info | object | 否 | 图片消息封面裁剪信息 |
+| product_info | object | 否 | 商品信息（暂不支持） |
+
+### 图片信息 (image_info)
+
+| 字段 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| image_list | array | 是 | 图片列表，最多 20 张，首张为封面 |
+| image_list[].image_media_id | string | 是 | 图片素材 ID（必须是永久 MediaID） |
+
+### 封面裁剪 (cover_info)
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| crop_percent_list | array | 裁剪信息列表 |
+| crop_percent_list[].ratio | string | 裁剪比例：`1_1`、`16_9`、`2.35_1` |
+| crop_percent_list[].x1/y1 | string | 左上角坐标（0-1） |
+| crop_percent_list[].x2/y2 | string | 右下角坐标（0-1） |
+
+### 返回参数
+
+| 参数 | 类型 | 说明 |
+|------|------|------|
+| media_id | string | 草稿 media_id（不超过 128 字符） |
+
+### 请求示例
+
+#### 图文消息 (news)
+
+```json
+{
+    "articles": [
+        {
+            "article_type": "news",
+            "title": "文章标题",
+            "author": "作者",
+            "digest": "摘要",
+            "content": "<p>正文内容</p>",
+            "content_source_url": "https://example.com",
+            "thumb_media_id": "R7Ifp6ogGOmtr3u...",
+            "need_open_comment": 1,
+            "only_fans_can_comment": 0,
+            "pic_crop_235_1": "0.1945_0_1_0.5236",
+            "pic_crop_1_1": "0.25_0_0.75_1"
+        }
+    ]
+}
+```
+
+#### 图片消息 (newspic/小绿书)
+
+```json
+{
+    "articles": [
+        {
+            "article_type": "newspic",
+            "title": "周末出游",
+            "content": "今天天气真好",
+            "need_open_comment": 1,
+            "only_fans_can_comment": 0,
+            "image_info": {
+                "image_list": [
+                    {"image_media_id": "IMAGE_MEDIA_ID_1"},
+                    {"image_media_id": "IMAGE_MEDIA_ID_2"},
+                    {"image_media_id": "IMAGE_MEDIA_ID_3"}
+                ]
+            },
+            "cover_info": {
+                "crop_percent_list": [
+                    {
+                        "ratio": "1_1",
+                        "x1": "0.166454",
+                        "y1": "0",
+                        "x2": "0.833545",
+                        "y2": "1"
+                    }
+                ]
+            }
+        }
+    ]
+}
+```
+
+### 返回示例
+
+```json
+{
+    "media_id": "MEDIA_ID"
+}
 ```
 
 ### Go 实现
 
+#### 图文消息（使用 SDK）
+
 ```go
-// 获取草稿管理器
 draftManager := officialAccount.GetDraft()
 
-// 构建文章
 articles := []draft.Article{
     {
         Title:            "文章标题",
         Author:           "作者",
-        Digest:           "摘要（120字符）",
-        Content:          "<!DOCTYPE html><html>...</html>",
-        ThumbMediaID:     "封面图的 media_id",
-        ShowCoverPic:     1,  // 是否显示封面图
-        ContentSourceURL: "原文链接",
+        Digest:           "摘要",
+        Content:          "<p>正文</p>",
+        ThumbMediaID:     "thumb_media_id",
+        ShowCoverPic:     1,
+        ContentSourceURL: "https://example.com",
     },
 }
 
-// 创建草稿
 mediaID, err := draftManager.AddDraft(articles)
 ```
 
-### 响应格式
+#### 图片消息（直接调用 API，SDK 不支持）
 
-```json
-{
-  "success": true,
-  "media_id": "draft_media_id_xxx",
-  "draft_url": "https://mp.weixin.qq.com/..."
+```go
+type NewspicArticle struct {
+    Title              string           `json:"title"`
+    Content            string           `json:"content"`
+    ArticleType        string           `json:"article_type"`
+    ImageInfo          NewspicImageInfo `json:"image_info"`
+    NeedOpenComment    int              `json:"need_open_comment,omitempty"`
+    OnlyFansCanComment int              `json:"only_fans_can_comment,omitempty"`
 }
+
+type NewspicImageInfo struct {
+    ImageList []NewspicImageItem `json:"image_list"`
+}
+
+type NewspicImageItem struct {
+    ImageMediaID string `json:"image_media_id"`
+}
+
+// 构造请求
+req := map[string]any{
+    "articles": []NewspicArticle{
+        {
+            Title:       "周末出游",
+            Content:     "今天天气真好",
+            ArticleType: "newspic",
+            ImageInfo: NewspicImageInfo{
+                ImageList: []NewspicImageItem{
+                    {ImageMediaID: "media_id_1"},
+                    {ImageMediaID: "media_id_2"},
+                },
+            },
+            NeedOpenComment: 1,
+        },
+    },
+}
+
+// POST to API
+url := fmt.Sprintf("https://api.weixin.qq.com/cgi-bin/draft/add?access_token=%s", accessToken)
+resp, err := http.Post(url, "application/json", bytes.NewReader(jsonBody))
 ```
 
-### 文章字段说明
+### 错误码
 
-| 字段 | 类型 | 必填 | 说明 |
-|------|------|------|------|
-| Title | string | 是 | 标题，不超过 64 字符 |
-| Author | string | 否 | 作者 |
-| Digest | string | 否 | 摘要，不超过 120 字符 |
-| Content | string | 是 | HTML 正文 |
-| ThumbMediaID | string | 是 | 封面图 media_id |
-| ShowCoverPic | int | 否 | 是否显示封面，0 或 1 |
-| ContentSourceURL | string | 否 | 原文链接 |
+| 错误码 | 说明 | 解决方案 |
+|--------|------|----------|
+| 45002 | content size out of limit | 内容超过 2 万字符或 1MB，需精简 |
+| 45004 | title too long | 标题超过 32 字符 |
+| 45005 | digest too long | 摘要超过 128 字符 |
+| 53404 | 账号已被限制带货能力 | 删除商品后重试 |
+| 53405 | 插入商品信息有误 | 检查商品参数及状态 |
+| 53406 | 请先开通带货能力 | 开通带货功能 |
+
+### 适用范围
+
+| 账号类型 | 可调用 |
+|----------|--------|
+| 公众号 | ✔ |
+| 服务号 | ✔ |
 
 ## 认证配置
 

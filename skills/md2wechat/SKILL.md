@@ -750,4 +750,82 @@ bash skills/md2wechat/scripts/run.sh humanize article.md --intensity aggressive
 
 # Write with humanize
 bash skills/md2wechat/scripts/run.sh write --style dan-koe --humanize
+
+# Create image post (小绿书/newspic)
+bash skills/md2wechat/scripts/run.sh create_image_post -t "Title" --images photo1.jpg,photo2.jpg
+
+# Extract images from Markdown
+bash skills/md2wechat/scripts/run.sh create_image_post -t "Title" -m article.md
+
+# With description and comments
+bash skills/md2wechat/scripts/run.sh create_image_post -t "Title" -c "Description" --images photo.jpg --open-comment
+
+# Preview mode (dry-run)
+bash skills/md2wechat/scripts/run.sh create_image_post -t "Test" --images a.jpg,b.jpg --dry-run
 ```
+
+---
+
+## Image Posts (小绿书/Newspic)
+
+Create WeChat image-only posts (小绿书/图片消息) with up to 20 images.
+
+### Natural Language
+
+```
+"Create an image post titled 'Weekend Trip' with photos from ./photos/"
+"Make a 小绿书 post with travel.md images"
+"Upload these images as an image post: a.jpg, b.jpg, c.jpg"
+```
+
+### Command Options
+
+| Flag | Short | Description |
+|------|-------|-------------|
+| `--title` | `-t` | Post title (required) |
+| `--content` | `-c` | Description text |
+| `--images` | | Comma-separated image paths |
+| `--from-markdown` | `-m` | Extract images from Markdown file |
+| `--open-comment` | | Enable comments |
+| `--fans-only` | | Only fans can comment |
+| `--dry-run` | | Preview without uploading |
+| `--output` | `-o` | Save result to JSON file |
+
+### Examples
+
+```bash
+# Basic image post
+bash skills/md2wechat/scripts/run.sh create_image_post \
+  -t "Weekend Trip" \
+  --images photo1.jpg,photo2.jpg,photo3.jpg
+
+# Extract images from article
+bash skills/md2wechat/scripts/run.sh create_image_post \
+  -t "Travel Diary" \
+  -m article.md
+
+# With description and comments enabled
+bash skills/md2wechat/scripts/run.sh create_image_post \
+  -t "Food Blog" \
+  -c "Today's lunch" \
+  --images food.jpg \
+  --open-comment
+
+# Read description from stdin
+echo "Daily check-in" | bash skills/md2wechat/scripts/run.sh create_image_post \
+  -t "Daily" \
+  --images pic.jpg
+
+# Preview mode
+bash skills/md2wechat/scripts/run.sh create_image_post \
+  -t "Test" \
+  --images a.jpg,b.jpg \
+  --dry-run
+```
+
+### Notes
+
+- **Image limit**: Maximum 20 images per post
+- **Image format**: JPG, PNG, GIF (same as regular articles)
+- **Content**: Plain text only, not HTML
+- **Requires**: `WECHAT_APPID` and `WECHAT_SECRET` for upload
